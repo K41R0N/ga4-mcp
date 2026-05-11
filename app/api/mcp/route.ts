@@ -21,6 +21,7 @@ async function clientsForUser(user: string) {
       refresh_token: refreshToken,
       type: 'authorized_user' as const,
     },
+    fallback: 'rest' as const, // use HTTP+JSON instead of gRPC for serverless compatibility
   };
 
   return {
@@ -37,12 +38,12 @@ function describeError(err: any): string {
   if (err?.statusDetails) parts.push(`statusDetails: ${JSON.stringify(err.statusDetails)}`);
   if (err?.reason) parts.push(`reason: ${err.reason}`);
   if (err?.domain) parts.push(`domain: ${err.domain}`);
-  if (err?.metadata) {
-    try {
-      parts.push(`metadata: ${JSON.stringify(err.metadata.getMap?.() || err.metadata)}`);
-    } catch {}
+  if (err?.errors) {
+    try { parts.push(`errors: ${JSON.stringify(err.errors)}`); } catch {}
   }
-  // catch-all dump of own enumerable keys
+  if (err?.response?.data) {
+    try { parts.push(`response.data: ${JSON.stringify(err.response.data)}`); } catch {}
+  }
   try {
     parts.push(`raw keys: ${Object.keys(err || {}).join(', ')}`);
     parts.push(`raw: ${JSON.stringify(err, Object.getOwnPropertyNames(err)).slice(0, 2000)}`);

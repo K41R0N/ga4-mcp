@@ -29,6 +29,27 @@ async function clientsForUser(user: string) {
   };
 }
 
+function describeError(err: any): string {
+  const parts: string[] = [];
+  parts.push(`message: ${err?.message ?? '(none)'}`);
+  if (err?.code !== undefined) parts.push(`code: ${err.code}`);
+  if (err?.details) parts.push(`details: ${err.details}`);
+  if (err?.statusDetails) parts.push(`statusDetails: ${JSON.stringify(err.statusDetails)}`);
+  if (err?.reason) parts.push(`reason: ${err.reason}`);
+  if (err?.domain) parts.push(`domain: ${err.domain}`);
+  if (err?.metadata) {
+    try {
+      parts.push(`metadata: ${JSON.stringify(err.metadata.getMap?.() || err.metadata)}`);
+    } catch {}
+  }
+  // catch-all dump of own enumerable keys
+  try {
+    parts.push(`raw keys: ${Object.keys(err || {}).join(', ')}`);
+    parts.push(`raw: ${JSON.stringify(err, Object.getOwnPropertyNames(err)).slice(0, 2000)}`);
+  } catch {}
+  return parts.join('\n');
+}
+
 const handler = createMcpHandler(
   (server) => {
     server.tool(
@@ -50,7 +71,7 @@ const handler = createMcpHandler(
         } catch (err: any) {
           console.error('list_properties failed:', err);
           return {
-            content: [{ type: 'text', text: `ERROR: ${err?.message || JSON.stringify(err)}\n\nSTACK: ${err?.stack || 'none'}` }],
+            content: [{ type: 'text', text: `LIST_PROPERTIES ERROR\n${describeError(err)}` }],
             isError: true,
           };
         }
@@ -83,7 +104,7 @@ const handler = createMcpHandler(
         } catch (err: any) {
           console.error('run_report failed:', err);
           return {
-            content: [{ type: 'text', text: `ERROR: ${err?.message || JSON.stringify(err)}\n\nSTACK: ${err?.stack || 'none'}` }],
+            content: [{ type: 'text', text: `RUN_REPORT ERROR\n${describeError(err)}` }],
             isError: true,
           };
         }
